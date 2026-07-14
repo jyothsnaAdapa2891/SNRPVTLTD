@@ -1,0 +1,44 @@
+{
+  "_id": "SNR-0001",
+  "quoteNumber": "SNR-0001",
+  "status": "Draft",
+  "date": "2026-07-14",
+  "city": "Gopanapalli, Hyderabad",
+  "projectName": "SNR THE ELITE",
+
+  "firstName": "Ramesh",
+  "lastName": "Kumar",
+  "phone": "9999999999",
+  "address": "",
+
+  "flatId": "F-805",
+  "flatNo": "805",
+  "block": "F",
+  "extentSft": 1790,
+  "bhk": "3 BHK",
+  "facing": "East",
+  "paymentOption": "Loan",
+
+  "basicRate": 7499,
+  "facingChargeRate": 100,
+  "cornerChargeRate": 0,
+  "discountPerSft": 0,
+
+  "amenities": 900000,
+  "corpusFund": 100000,
+  "maintRatePerSftMonth": 3,
+  "maintMonths": 24,
+  "waterCharges": 75000,
+  "legalCharges": 20000,
+  "cautionDeposit": 25000,
+
+  "bookingAmount": 500000,
+
+  "signatoryName": "ASRK REDDY",
+  "signatoryTitle": "EXECUTIVE DIRECTOR",
+
+  "notes": "",
+
+  "createdAt": "2026-07-14T14:00:00.000Z",
+  "updatedAt": "2026-07-14T14:00:00.000Z"
+}
