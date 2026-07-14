@@ -41,11 +41,22 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = resolveUri().then((uri) =>
-      mongoose.connect(uri, { dbName: "snr_quotes" }),
-    );
+    cached.promise = resolveUri()
+      .then((uri) => mongoose.connect(uri, { dbName: "snr_quotes" }))
+      .catch((err) => {
+        // Don't cache a failed connection attempt — otherwise every request
+        // afterward (on this warm serverless instance) replays the same
+        // stale rejection forever instead of ever retrying.
+        cached.promise = null;
+        throw err;
+      });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    cached.promise = null;
+    throw err;
+  }
   return cached.conn;
 }
