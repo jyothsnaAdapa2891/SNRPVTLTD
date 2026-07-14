@@ -10,10 +10,13 @@ import {
   Plus,
   FileText,
   Loader2,
+  Download,
+  SlidersHorizontal,
 } from "lucide-react";
-import { StatusBadge, Button } from "./ui";
+import { StatusBadge, Button, Card, Select } from "./ui";
 import { computeQuote, rupees, formatDateNice } from "@/lib/calc";
 import { getAllQuotes } from "@/lib/store";
+import { toCsv, downloadCsv } from "@/lib/csv";
 import type { Quote } from "@/lib/types";
 
 type SortKey =
@@ -43,10 +46,14 @@ function guestNameOf(q: Quote) {
   return `${q.firstName ?? ""} ${q.lastName ?? ""}`.trim();
 }
 
+const emptyFilters = { status: "", block: "", bhk: "", paymentOption: "" };
+
 export default function QuotesTable() {
   const [quotes, setQuotes] = useState<Quote[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState(emptyFilters);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "date",
     dir: "desc",
@@ -57,6 +64,13 @@ export default function QuotesTable() {
       .then(setQuotes)
       .catch(() => setError("Failed to load quotes."));
   }, []);
+
+  const blocks = useMemo(
+    () => Array.from(new Set((quotes ?? []).map((q) => q.block).filter(Boolean))).sort(),
+    [quotes],
+  );
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const rows = useMemo(() => {
     if (!quotes) return [];
@@ -78,6 +92,12 @@ export default function QuotesTable() {
           .some((v) => String(v).toLowerCase().includes(q)),
       );
     }
+    if (filters.status) list = list.filter((item) => item.status === filters.status);
+    if (filters.block) list = list.filter((item) => item.block === filters.block);
+    if (filters.bhk) list = list.filter((item) => item.bhk === filters.bhk);
+    if (filters.paymentOption)
+      list = list.filter((item) => item.paymentOption === filters.paymentOption);
+
     const dir = sort.dir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
       let av: string | number;
@@ -96,7 +116,7 @@ export default function QuotesTable() {
         return (av - bv) * dir;
       return String(av).localeCompare(String(bv)) * dir;
     });
-  }, [quotes, query, sort]);
+  }, [quotes, query, filters, sort]);
 
   function toggleSort(key: SortKey) {
     setSort((s) =>
@@ -115,6 +135,22 @@ export default function QuotesTable() {
       <ArrowDown size={13} className="text-navy" />
     );
 
+  function handleExport() {
+    const csv = toCsv(rows, [
+      { key: "quoteNumber", label: "Quote #", value: (q) => q.quoteNumber },
+      { key: "guest", label: "Guest", value: (q) => guestNameOf(q) },
+      { key: "phone", label: "Phone", value: (q) => q.phone ?? "" },
+      { key: "flat", label: "Flat", value: (q) => (q.block && q.flatNo ? `${q.block}-${q.flatNo}` : q.flatNo ?? "") },
+      { key: "extentSft", label: "Extent (Sft)", value: (q) => q.extentSft ?? 0 },
+      { key: "bhk", label: "Configuration", value: (q) => q.bhk ?? "" },
+      { key: "paymentOption", label: "Payment Option", value: (q) => q.paymentOption ?? "" },
+      { key: "flatCost", label: "Flat Cost (Rs.)", value: (q) => Math.round(flatCostOf(q)) },
+      { key: "status", label: "Status", value: (q) => q.status },
+      { key: "date", label: "Date", value: (q) => q.date },
+    ]);
+    downloadCsv(`SNR_Quotes_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 animate-in">
       {/* Title row */}
@@ -128,8 +164,8 @@ export default function QuotesTable() {
             · SNR Group
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:w-72">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 sm:w-64">
             <Search
               size={16}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -141,13 +177,73 @@ export default function QuotesTable() {
               className="w-full rounded-lg border border-border bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
             />
           </div>
-          <Link href="/quotes/new" className="hidden sm:block">
+          <Button
+            variant={activeFilterCount > 0 ? "primary" : "secondary"}
+            onClick={() => setShowFilters((s) => !s)}
+          >
+            <SlidersHorizontal size={16} />
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </Button>
+          <Button variant="secondary" onClick={handleExport} disabled={rows.length === 0}>
+            <Download size={16} /> Export
+          </Button>
+          <Link href="/quotes/new">
             <Button>
               <Plus size={16} /> New
             </Button>
           </Link>
         </div>
       </div>
+
+      {showFilters && (
+        <Card className="mb-6 grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
+          <Select
+            value={filters.status}
+            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+          >
+            <option value="">All Statuses</option>
+            <option value="Draft">Draft</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Rejected">Rejected</option>
+          </Select>
+          <Select
+            value={filters.block}
+            onChange={(e) => setFilters((f) => ({ ...f, block: e.target.value }))}
+          >
+            <option value="">All Blocks</option>
+            {blocks.map((b) => (
+              <option key={b} value={b}>
+                Block {b}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={filters.bhk}
+            onChange={(e) => setFilters((f) => ({ ...f, bhk: e.target.value }))}
+          >
+            <option value="">All Configurations</option>
+            <option value="2 BHK">2 BHK</option>
+            <option value="3 BHK">3 BHK</option>
+          </Select>
+          <Select
+            value={filters.paymentOption}
+            onChange={(e) => setFilters((f) => ({ ...f, paymentOption: e.target.value }))}
+          >
+            <option value="">All Payment Options</option>
+            <option value="Loan">Loan</option>
+            <option value="Outright">Outright</option>
+          </Select>
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilters(emptyFilters)}
+              className="col-span-2 text-left text-[13px] font-medium text-navy underline decoration-dotted underline-offset-2 hover:text-navy-600 sm:col-span-4"
+            >
+              Clear all filters
+            </button>
+          )}
+        </Card>
+      )}
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -228,7 +324,7 @@ export default function QuotesTable() {
             </div>
             {rows.length === 0 && (
               <div className="py-14 text-center text-sm text-slate-400">
-                No quotes match “{query}”.
+                No quotes match your search/filters.
               </div>
             )}
           </div>
@@ -266,7 +362,7 @@ export default function QuotesTable() {
             ))}
             {rows.length === 0 && (
               <div className="py-10 text-center text-sm text-slate-400">
-                No quotes match “{query}”.
+                No quotes match your search/filters.
               </div>
             )}
           </div>

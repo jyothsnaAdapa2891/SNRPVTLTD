@@ -11,13 +11,17 @@ import {
   Trash2,
   Pencil,
   Loader2,
+  Download,
+  SlidersHorizontal,
 } from "lucide-react";
-import { Button, Card, cn } from "./ui";
+import { Button, Card, Select, cn } from "./ui";
 import AddVacantModal from "./AddVacantModal";
+import { toCsv, downloadCsv } from "@/lib/csv";
 import {
   getAllVacants,
   deleteVacant,
   configForExtent,
+  FACING_OPTIONS,
   type VacantPlot,
 } from "@/lib/vacants";
 import { getFlatStatusMap } from "@/lib/store";
@@ -25,6 +29,7 @@ import type { QuoteStatus } from "@/lib/types";
 
 type SortKey = "block" | "flatNo" | "extentSft" | "facing" | "bhk" | "status";
 type RowStatus = QuoteStatus | "Available";
+type DisplayStatus = "Available" | "Sold";
 
 const columns: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "block", label: "Block" },
@@ -35,11 +40,19 @@ const columns: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "status", label: "Status" },
 ];
 
+// Full detail, used only for the delete-confirmation message.
 const statusMeta: Record<RowStatus, { label: string; className: string }> = {
   Available: { label: "Available", className: "bg-emerald-50 text-emerald-700" },
   Draft: { label: "Draft", className: "bg-slate-100 text-slate-600" },
   Accepted: { label: "Sold", className: "bg-red-50 text-red-700" },
   Rejected: { label: "Rejected", className: "bg-amber-50 text-amber-700" },
+};
+
+// What's actually shown in the table/filters/export: Draft & Rejected both
+// just mean "not sold yet", so they're folded into Available.
+const displayStatusMeta: Record<DisplayStatus, { label: string; className: string }> = {
+  Available: { label: "Available", className: "bg-emerald-50 text-emerald-700" },
+  Sold: { label: "Sold", className: "bg-red-50 text-red-700" },
 };
 
 const blockPalette = [
@@ -58,10 +71,14 @@ function blockColor(block: string) {
   return blockPalette[idx] ?? blockPalette[0];
 }
 
+const emptyFilters = { block: "", facing: "", bhk: "", status: "", corner: "" };
+
 export default function VacantsTable() {
   const [vacants, setVacants] = useState<VacantPlot[] | null>(null);
   const [statusMap, setStatusMap] = useState<Map<string, QuoteStatus>>(new Map());
   const [query, setQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState(emptyFilters);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVacant, setEditingVacant] = useState<VacantPlot | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -83,6 +100,17 @@ export default function VacantsTable() {
     return statusMap.get(v.id) ?? "Available";
   }
 
+  function displayStatusOf(v: VacantPlot): DisplayStatus {
+    return statusOf(v) === "Accepted" ? "Sold" : "Available";
+  }
+
+  const blocks = useMemo(
+    () => Array.from(new Set((vacants ?? []).map((v) => v.block))).sort(),
+    [vacants],
+  );
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
   const rows = useMemo(() => {
     if (!vacants) return [];
     const q = query.trim().toLowerCase();
@@ -95,6 +123,12 @@ export default function VacantsTable() {
           .includes(q),
       );
     }
+    if (filters.block) list = list.filter((v) => v.block === filters.block);
+    if (filters.facing) list = list.filter((v) => v.facing === filters.facing);
+    if (filters.bhk) list = list.filter((v) => configForExtent(v.extentSft) === filters.bhk);
+    if (filters.corner) list = list.filter((v) => String(v.corner) === filters.corner);
+    if (filters.status) list = list.filter((v) => displayStatusOf(v) === filters.status);
+
     const dir = sort.dir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
       let av: string | number;
@@ -103,8 +137,8 @@ export default function VacantsTable() {
         av = configForExtent(a.extentSft);
         bv = configForExtent(b.extentSft);
       } else if (sort.key === "status") {
-        av = statusOf(a);
-        bv = statusOf(b);
+        av = displayStatusOf(a);
+        bv = displayStatusOf(b);
       } else {
         av = a[sort.key];
         bv = b[sort.key];
@@ -113,20 +147,20 @@ export default function VacantsTable() {
       return String(av).localeCompare(String(bv), undefined, { numeric: true }) * dir;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vacants, query, sort, statusMap]);
+  }, [vacants, query, filters, sort, statusMap]);
+
+  const isFiltered = query.trim() !== "" || activeFilterCount > 0;
 
   const stats = useMemo(() => {
-    if (!vacants) return { total: 0, available: 0, sold: 0 };
     let available = 0;
     let sold = 0;
-    for (const v of vacants) {
-      const s = statusOf(v);
-      if (s === "Available" || s === "Draft" || s === "Rejected") available++;
-      if (s === "Accepted") sold++;
+    for (const v of rows) {
+      if (displayStatusOf(v) === "Sold") sold++;
+      else available++;
     }
-    return { total: vacants.length, available, sold };
+    return { total: rows.length, available, sold };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vacants, statusMap]);
+  }, [rows, statusMap]);
 
   function toggleSort(key: SortKey) {
     setSort((s) =>
@@ -171,19 +205,32 @@ export default function VacantsTable() {
     setBusyId(null);
   }
 
+  function handleExport() {
+    const csv = toCsv(rows, [
+      { key: "block", label: "Block", value: (v) => v.block },
+      { key: "flatNo", label: "Flat No", value: (v) => v.flatNo },
+      { key: "extentSft", label: "Extent (Sft)", value: (v) => v.extentSft },
+      { key: "facing", label: "Facing", value: (v) => v.facing },
+      { key: "bhk", label: "Configuration", value: (v) => configForExtent(v.extentSft) },
+      { key: "status", label: "Status", value: (v) => displayStatusOf(v) },
+      { key: "corner", label: "Corner", value: (v) => (v.corner ? "Yes" : "No") },
+    ]);
+    downloadCsv(`SNR_Vacant_Plots_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 animate-in">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-navy sm:text-3xl">
-            Vacant Plots
+            Plots
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Flat inventory available to select when creating a quote
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 sm:w-56">
             <Search
               size={16}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -195,29 +242,99 @@ export default function VacantsTable() {
               className="w-full rounded-lg border border-border bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15"
             />
           </div>
+          <Button
+            variant={activeFilterCount > 0 ? "primary" : "secondary"}
+            onClick={() => setShowFilters((s) => !s)}
+          >
+            <SlidersHorizontal size={16} />
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </Button>
+          <Button variant="secondary" onClick={handleExport} disabled={rows.length === 0}>
+            <Download size={16} /> Export
+          </Button>
           <Button onClick={openAddModal}>
             <Plus size={16} /> Add Vacant
           </Button>
         </div>
       </div>
 
+      {showFilters && (
+        <Card className="mb-6 grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
+          <Select
+            value={filters.block}
+            onChange={(e) => setFilters((f) => ({ ...f, block: e.target.value }))}
+          >
+            <option value="">All Blocks</option>
+            {blocks.map((b) => (
+              <option key={b} value={b}>
+                Block {b}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={filters.facing}
+            onChange={(e) => setFilters((f) => ({ ...f, facing: e.target.value }))}
+          >
+            <option value="">All Facings</option>
+            {FACING_OPTIONS.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={filters.bhk}
+            onChange={(e) => setFilters((f) => ({ ...f, bhk: e.target.value }))}
+          >
+            <option value="">All Configurations</option>
+            <option value="2 BHK">2 BHK</option>
+            <option value="3 BHK">3 BHK</option>
+          </Select>
+          <Select
+            value={filters.status}
+            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+          >
+            <option value="">All Statuses</option>
+            <option value="Available">Available</option>
+            <option value="Sold">Sold</option>
+          </Select>
+          <Select
+            value={filters.corner}
+            onChange={(e) => setFilters((f) => ({ ...f, corner: e.target.value }))}
+          >
+            <option value="">Corner: Any</option>
+            <option value="true">Corner Only</option>
+            <option value="false">Non-Corner Only</option>
+          </Select>
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setFilters(emptyFilters)}
+              className="col-span-2 text-left text-[13px] font-medium text-navy underline decoration-dotted underline-offset-2 hover:text-navy-600 sm:col-span-3 lg:col-span-5"
+            >
+              Clear all filters
+            </button>
+          )}
+        </Card>
+      )}
+
       {/* Stat chips */}
       <div className="mb-6 grid grid-cols-3 gap-3">
         <Card className="p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Total Plots
+            {isFiltered ? "Filtered Plots" : "Total Plots"}
           </p>
           <p className="mt-1 text-2xl font-bold text-navy">{stats.total}</p>
         </Card>
         <Card className="p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Available
+            Available{isFiltered ? " (Filtered)" : ""}
           </p>
           <p className="mt-1 text-2xl font-bold text-emerald-600">{stats.available}</p>
         </Card>
         <Card className="p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Sold
+            Sold{isFiltered ? " (Filtered)" : ""}
           </p>
           <p className="mt-1 text-2xl font-bold text-red-600">{stats.sold}</p>
         </Card>
@@ -270,7 +387,7 @@ export default function VacantsTable() {
               </thead>
               <tbody>
                 {rows.map((v) => {
-                  const status = statusOf(v);
+                  const status = displayStatusOf(v);
                   return (
                     <tr
                       key={v.id}
@@ -298,11 +415,11 @@ export default function VacantsTable() {
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
-                            statusMeta[status].className,
+                            displayStatusMeta[status].className,
                           )}
                         >
                           <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current opacity-70" />
-                          {statusMeta[status].label}
+                          {displayStatusMeta[status].label}
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
@@ -345,7 +462,7 @@ export default function VacantsTable() {
           </div>
           {rows.length === 0 && (
             <div className="py-14 text-center text-sm text-slate-400">
-              No vacant plots match “{query}”.
+              No vacant plots match your search/filters.
             </div>
           )}
         </div>

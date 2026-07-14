@@ -125,7 +125,9 @@ export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props
           <Field label="Block">
             <TextInput
               value={form.block}
-              onChange={(e) => setForm((f) => ({ ...f, block: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, block: e.target.value.toUpperCase() }))
+              }
               placeholder="e.g. F"
               maxLength={3}
             />

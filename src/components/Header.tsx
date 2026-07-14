@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Plus, LogOut, UserRound, Building2 } from "lucide-react";
+import { FileText, LogOut, UserRound, Building2 } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { logout } from "@/app/actions/auth";
 
@@ -34,14 +34,7 @@ export default async function Header() {
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-3.5 py-2 text-sm font-semibold text-navy shadow-sm transition-all hover:bg-slate-50 active:scale-[0.98]"
             >
               <Building2 size={16} strokeWidth={2.2} />
-              <span className="hidden sm:inline">Vacant Plots</span>
-            </Link>
-            <Link
-              href="/quotes/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-navy px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-navy-600 active:scale-[0.98]"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              <span className="hidden sm:inline">New Quote</span>
+              <span className="hidden sm:inline">Plots</span>
             </Link>
             <form action={logout}>
               <button

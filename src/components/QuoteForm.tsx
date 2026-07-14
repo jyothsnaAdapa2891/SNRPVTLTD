@@ -162,7 +162,7 @@ export default function QuoteForm({ initial, id }: Props) {
             <Field label="Basic Rate (Rs./Sft)" hint={`Basic Cost = ${rupees(c.basicCost)}`}>
               <TextInput
                 type="number"
-                value={form.basicRate || ""}
+                value={form.basicRate}
                 onChange={num("basicRate")}
               />
             </Field>
@@ -172,7 +172,7 @@ export default function QuoteForm({ initial, id }: Props) {
             >
               <TextInput
                 type="number"
-                value={form.facingChargeRate || ""}
+                value={form.facingChargeRate}
                 onChange={num("facingChargeRate")}
               />
             </Field>
@@ -186,7 +186,7 @@ export default function QuoteForm({ initial, id }: Props) {
             >
               <TextInput
                 type="number"
-                value={form.cornerChargeRate || ""}
+                value={form.cornerChargeRate}
                 onChange={num("cornerChargeRate")}
               />
             </Field>
@@ -214,7 +214,7 @@ export default function QuoteForm({ initial, id }: Props) {
                 <>
                   <TextInput
                     type="number"
-                    value={form.discountPerSft || ""}
+                    value={form.discountPerSft}
                     onChange={num("discountPerSft")}
                     placeholder="Rs. per Sft"
                   />
@@ -245,7 +245,7 @@ export default function QuoteForm({ initial, id }: Props) {
             <Field label="Booking Amount">
               <TextInput
                 type="number"
-                value={form.bookingAmount || ""}
+                value={form.bookingAmount}
                 onChange={num("bookingAmount")}
               />
             </Field>

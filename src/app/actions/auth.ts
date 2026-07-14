@@ -17,7 +17,7 @@ export async function login(
     return { error: "Enter both username and password." };
   }
 
-  if (!verifyCredentials(username, password)) {
+  if (!(await verifyCredentials(username, password))) {
     return { error: "Invalid username or password." };
   }
 
