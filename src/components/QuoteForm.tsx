@@ -229,7 +229,10 @@ export default function QuoteForm({ initial, id }: Props) {
           </Section>
 
           <Section title="Payable at Registration">
-            <LockedField label="Amenities (incl. Two Car Parking)" value={rupees(form.amenities)} />
+            <LockedField
+              label={`Amenities (incl. ${form.bhk === "2 BHK" ? "One" : "Two"} Car Parking)`}
+              value={rupees(form.amenities)}
+            />
             <LockedField label="Corpus Fund" value={rupees(form.corpusFund)} />
             <LockedField
               label="Adv. Maintenance"

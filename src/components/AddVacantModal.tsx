@@ -177,7 +177,9 @@ export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props
               }
             >
               {VACANT_STATUS_OPTIONS.map((o) => (
-                <option key={o}>{o}</option>
+                <option key={o} value={o}>
+                  {o === "Available" ? "Vacant" : o}
+                </option>
               ))}
             </Select>
           </Field>

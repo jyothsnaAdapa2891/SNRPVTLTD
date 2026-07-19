@@ -84,8 +84,13 @@ export function computeQuote(q: Quote | QuoteInput): ComputedQuote {
     extent *
     (Number(q.maintMonths) || 0);
 
+  const carParkingLabel = q.bhk === "2 BHK" ? "One Car Parking" : "Two Car Parking";
+
   const registrationCharges = [
-    { label: "Amenities (Including Two Car Parking)", amount: Number(q.amenities) || 0 },
+    {
+      label: `Amenities (Including ${carParkingLabel})`,
+      amount: Number(q.amenities) || 0,
+    },
     { label: "Corpus Fund", amount: Number(q.corpusFund) || 0 },
     {
       label: `${q.maintMonths ? Math.round(Number(q.maintMonths) / 12) : 0} Yrs. Adv. Maint. Charges (@Rs.${q.maintRatePerSftMonth}/- per Sft. per Month)`,

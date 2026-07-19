@@ -45,7 +45,7 @@ const columns: { key: SortKey; label: string; align?: "right" }[] = [
 
 // Manually-set status shown in the table/filters/export/stats.
 const statusMeta: Record<VacantStatus, { label: string; className: string; dot: string }> = {
-  Available: { label: "Available", className: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+  Available: { label: "Vacant", className: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
   Reserved: { label: "Reserved", className: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
   Mortgaged: { label: "Mortgaged", className: "bg-violet-50 text-violet-700", dot: "bg-violet-500" },
   Sold: { label: "Sold", className: "bg-red-50 text-red-700", dot: "bg-red-500" },
@@ -292,7 +292,7 @@ export default function VacantsTable() {
   async function handleDelete(v: VacantPlot) {
     const quoteStatus = statusMap.get(v.id);
     const warnings: string[] = [];
-    if (v.status !== "Available") warnings.push(`marked "${v.status}"`);
+    if (v.status !== "Available") warnings.push(`marked "${statusMeta[v.status].label}"`);
     if (quoteStatus) warnings.push(`has a quote with status "${quoteStatusLabel[quoteStatus]}"`);
     const warn = warnings.length ? ` This flat is ${warnings.join(" and ")}.` : "";
     if (!confirm(`Delete flat ${v.block}-${v.flatNo}?${warn}`)) return;
@@ -309,8 +309,7 @@ export default function VacantsTable() {
       { key: "extentSft", label: "Extent (Sft)", value: (v) => v.extentSft },
       { key: "facing", label: "Facing", value: (v) => v.facing },
       { key: "bhk", label: "Configuration", value: (v) => configForExtent(v.extentSft) },
-      { key: "status", label: "Status", value: (v) => v.status },
-      { key: "corner", label: "Corner", value: (v) => (v.corner ? "Yes" : "No") },
+      { key: "status", label: "Status", value: (v) => statusMeta[v.status].label },
     ]);
     const asOn = new Date().toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -318,9 +317,13 @@ export default function VacantsTable() {
       year: "numeric",
     });
     const listTitle = rows.some((v) => v.status === "Sold") ? "Flat List" : "Vacant List";
-    const header = ["SNR AVENUES PVT LTD", "SNR THE ELITE", `${listTitle} as on ${asOn}`, ""].join(
-      "\r\n",
-    );
+    const header = [
+      "SNR AVENUES PVT LTD",
+      "SNR THE ELITE",
+      `${listTitle} as on ${asOn}`,
+      `Total: ${rows.length}`,
+      "",
+    ].join("\r\n");
     downloadCsv(`SNR_Flats_${new Date().toISOString().slice(0, 10)}.csv`, `${header}\r\n${table}`);
   }
 
@@ -389,7 +392,7 @@ export default function VacantsTable() {
           />
           <MultiSelectFilter
             label="Status"
-            options={VACANT_STATUS_OPTIONS.map((s) => ({ value: s, label: s }))}
+            options={VACANT_STATUS_OPTIONS.map((s) => ({ value: s, label: statusMeta[s].label }))}
             selected={filters.status}
             onChange={(next) => setFilters((f) => ({ ...f, status: next }))}
           />
@@ -424,7 +427,8 @@ export default function VacantsTable() {
         </Card>
         <Card className="p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Available{isFiltered ? " (Filtered)" : ""}
+            {statusMeta.Available.label}
+            {isFiltered ? " (Filtered)" : ""}
           </p>
           <p className="mt-1 text-2xl font-bold text-emerald-600">{stats.available}</p>
         </Card>
@@ -533,7 +537,7 @@ export default function VacantsTable() {
                           >
                             {VACANT_STATUS_OPTIONS.map((s) => (
                               <option key={s} value={s}>
-                                {s}
+                                {statusMeta[s].label}
                               </option>
                             ))}
                           </select>
