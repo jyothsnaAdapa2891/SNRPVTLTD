@@ -30,7 +30,7 @@ export interface Quote {
   discountPerSft: number; // per sft (0 = no discount, hidden on the printed quote)
 
   // Registration-time charges (fixed, not user-editable)
-  amenities: number; // derived from bhk: 900000 (3 BHK) / 750000 (2 BHK)
+  amenities: number; // derived from bhk: 900000 (3 BHK) / 700000 (2 BHK)
   corpusFund: number; // fixed 100000
   maintRatePerSftMonth: number; // fixed 3
   maintMonths: number; // fixed 24

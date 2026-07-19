@@ -9,6 +9,11 @@ const VacantPlotSchema = new Schema(
     extentSft: { type: Number, required: true },
     facing: { type: String, required: true },
     corner: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ["Available", "Sold", "Reserved", "Mortgaged"],
+      default: "Available",
+    },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false, versionKey: false },

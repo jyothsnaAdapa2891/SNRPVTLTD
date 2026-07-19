@@ -9,7 +9,9 @@ import {
   updateVacant,
   configForExtent,
   FACING_OPTIONS,
+  VACANT_STATUS_OPTIONS,
   type VacantPlot,
+  type VacantStatus,
 } from "@/lib/vacants";
 
 type Props = {
@@ -19,7 +21,14 @@ type Props = {
   vacant?: VacantPlot | null;
 };
 
-const emptyForm = { block: "", flatNo: "", extentSft: "", facing: "", corner: false };
+const emptyForm = {
+  block: "",
+  flatNo: "",
+  extentSft: "",
+  facing: "",
+  corner: false,
+  status: "Available" as VacantStatus,
+};
 
 export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props) {
   const [form, setForm] = useState(emptyForm);
@@ -37,6 +46,7 @@ export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props
               extentSft: String(vacant.extentSft),
               facing: vacant.facing,
               corner: vacant.corner,
+              status: vacant.status,
             }
           : emptyForm,
       );
@@ -74,10 +84,11 @@ export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props
         extentSft: extentNum,
         facing: form.facing,
         corner: form.corner,
+        status: form.status,
       };
       const saved =
         isEdit && vacant ? await updateVacant(vacant.id, input) : await addVacant(input);
-      if (!saved) throw new Error("Vacant plot not found.");
+      if (!saved) throw new Error("Flat not found.");
       onSaved(saved);
       onClose();
     } catch (err) {
@@ -105,7 +116,7 @@ export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props
             </span>
             <div>
               <h2 className="text-base font-bold text-navy">
-                {isEdit ? "Edit Vacant Plot" : "Add Vacant Plot"}
+                {isEdit ? "Edit Flat" : "Add Flat"}
               </h2>
               <p className="text-[12px] text-slate-500">
                 {isEdit ? "Update this flat inventory entry" : "New entry in the flat inventory"}
@@ -158,6 +169,18 @@ export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props
               ))}
             </Select>
           </Field>
+          <Field label="Status">
+            <Select
+              value={form.status}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, status: e.target.value as VacantStatus }))
+              }
+            >
+              {VACANT_STATUS_OPTIONS.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </Select>
+          </Field>
         </div>
 
         <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-white px-3 py-2.5">
@@ -190,7 +213,7 @@ export default function AddVacantModal({ open, onClose, onSaved, vacant }: Props
           </Button>
           <Button type="submit" disabled={saving}>
             {saving && <Loader2 size={16} className="animate-spin" />}
-            {isEdit ? "Save Changes" : "Add Plot"}
+            {isEdit ? "Save Changes" : "Add Flat"}
           </Button>
         </div>
       </form>

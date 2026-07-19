@@ -27,7 +27,7 @@ export function floorRiseRateForFloor(floor: number): number {
 
 /** Amenities are fixed by configuration, not user-editable. */
 export function amenitiesForBhk(bhk: string): number {
-  if (bhk === "2 BHK") return 750000;
+  if (bhk === "2 BHK") return 700000;
   return 900000; // 3 BHK and anything else
 }
 

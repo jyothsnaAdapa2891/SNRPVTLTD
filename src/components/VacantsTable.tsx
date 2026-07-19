@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   ArrowUpDown,
@@ -13,23 +13,26 @@ import {
   Loader2,
   Download,
   SlidersHorizontal,
+  ChevronDown,
+  Check,
 } from "lucide-react";
-import { Button, Card, Select, cn } from "./ui";
+import { Button, Card, cn } from "./ui";
 import AddVacantModal from "./AddVacantModal";
 import { toCsv, downloadCsv } from "@/lib/csv";
 import {
   getAllVacants,
   deleteVacant,
+  updateVacantStatus,
   configForExtent,
   FACING_OPTIONS,
+  VACANT_STATUS_OPTIONS,
   type VacantPlot,
+  type VacantStatus,
 } from "@/lib/vacants";
 import { getFlatStatusMap } from "@/lib/store";
 import type { QuoteStatus } from "@/lib/types";
 
 type SortKey = "block" | "flatNo" | "extentSft" | "facing" | "bhk" | "status";
-type RowStatus = QuoteStatus | "Available";
-type DisplayStatus = "Available" | "Sold";
 
 const columns: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "block", label: "Block" },
@@ -40,19 +43,19 @@ const columns: { key: SortKey; label: string; align?: "right" }[] = [
   { key: "status", label: "Status" },
 ];
 
-// Full detail, used only for the delete-confirmation message.
-const statusMeta: Record<RowStatus, { label: string; className: string }> = {
-  Available: { label: "Available", className: "bg-emerald-50 text-emerald-700" },
-  Draft: { label: "Draft", className: "bg-slate-100 text-slate-600" },
-  Accepted: { label: "Sold", className: "bg-red-50 text-red-700" },
-  Rejected: { label: "Rejected", className: "bg-amber-50 text-amber-700" },
+// Manually-set status shown in the table/filters/export/stats.
+const statusMeta: Record<VacantStatus, { label: string; className: string; dot: string }> = {
+  Available: { label: "Available", className: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" },
+  Reserved: { label: "Reserved", className: "bg-amber-50 text-amber-700", dot: "bg-amber-500" },
+  Mortgaged: { label: "Mortgaged", className: "bg-violet-50 text-violet-700", dot: "bg-violet-500" },
+  Sold: { label: "Sold", className: "bg-red-50 text-red-700", dot: "bg-red-500" },
 };
 
-// What's actually shown in the table/filters/export: Draft & Rejected both
-// just mean "not sold yet", so they're folded into Available.
-const displayStatusMeta: Record<DisplayStatus, { label: string; className: string }> = {
-  Available: { label: "Available", className: "bg-emerald-50 text-emerald-700" },
-  Sold: { label: "Sold", className: "bg-red-50 text-red-700" },
+// Full quote-status detail, used only for the delete-confirmation message.
+const quoteStatusLabel: Record<QuoteStatus, string> = {
+  Draft: "Draft",
+  Accepted: "Accepted",
+  Rejected: "Rejected",
 };
 
 const blockPalette = [
@@ -71,7 +74,96 @@ function blockColor(block: string) {
   return blockPalette[idx] ?? blockPalette[0];
 }
 
-const emptyFilters = { block: "", facing: "", bhk: "", status: "", corner: "" };
+const emptyFilters = {
+  block: [] as string[],
+  facing: [] as string[],
+  bhk: [] as string[],
+  status: [] as string[],
+  corner: [] as string[],
+};
+
+type MultiSelectOption = { value: string; label: string };
+
+function MultiSelectFilter({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: MultiSelectOption[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  function toggle(value: string) {
+    onChange(
+      selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value],
+    );
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-lg border border-border bg-white px-3 py-2 text-left text-sm shadow-sm outline-none transition-colors hover:border-navy-500/50 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15",
+        )}
+      >
+        <span className="truncate text-slate-700">
+          {label}
+          {selected.length > 0 && (
+            <span className="ml-1 font-semibold text-navy">({selected.length})</span>
+          )}
+        </span>
+        <ChevronDown size={15} className="shrink-0 text-slate-400" />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 mt-1 max-h-64 w-full min-w-[180px] overflow-y-auto rounded-lg border border-border bg-white py-1 shadow-lg">
+          {options.map((o) => {
+            const checked = selected.includes(o.value);
+            return (
+              <label
+                key={o.value}
+                className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50"
+              >
+                <span
+                  className={cn(
+                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                    checked ? "border-navy bg-navy text-white" : "border-border bg-white",
+                  )}
+                >
+                  {checked && <Check size={11} strokeWidth={3} />}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(o.value)}
+                  className="sr-only"
+                />
+                <span className="text-slate-700">{o.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function VacantsTable() {
   const [vacants, setVacants] = useState<VacantPlot[] | null>(null);
@@ -82,6 +174,7 @@ export default function VacantsTable() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVacant, setEditingVacant] = useState<VacantPlot | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [statusBusyId, setStatusBusyId] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "block",
     dir: "asc",
@@ -96,12 +189,15 @@ export default function VacantsTable() {
     refresh();
   }, []);
 
-  function statusOf(v: VacantPlot): RowStatus {
-    return statusMap.get(v.id) ?? "Available";
-  }
-
-  function displayStatusOf(v: VacantPlot): DisplayStatus {
-    return statusOf(v) === "Accepted" ? "Sold" : "Available";
+  async function handleStatusChange(v: VacantPlot, status: VacantStatus) {
+    if (status === v.status) return;
+    setStatusBusyId(v.id);
+    try {
+      await updateVacantStatus(v.id, status);
+      refresh();
+    } finally {
+      setStatusBusyId(null);
+    }
   }
 
   const blocks = useMemo(
@@ -109,7 +205,7 @@ export default function VacantsTable() {
     [vacants],
   );
 
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const activeFilterCount = Object.values(filters).reduce((n, v) => n + v.length, 0);
 
   const rows = useMemo(() => {
     if (!vacants) return [];
@@ -123,11 +219,13 @@ export default function VacantsTable() {
           .includes(q),
       );
     }
-    if (filters.block) list = list.filter((v) => v.block === filters.block);
-    if (filters.facing) list = list.filter((v) => v.facing === filters.facing);
-    if (filters.bhk) list = list.filter((v) => configForExtent(v.extentSft) === filters.bhk);
-    if (filters.corner) list = list.filter((v) => String(v.corner) === filters.corner);
-    if (filters.status) list = list.filter((v) => displayStatusOf(v) === filters.status);
+    if (filters.block.length) list = list.filter((v) => filters.block.includes(v.block));
+    if (filters.facing.length) list = list.filter((v) => filters.facing.includes(v.facing));
+    if (filters.bhk.length)
+      list = list.filter((v) => filters.bhk.includes(configForExtent(v.extentSft)));
+    if (filters.corner.length)
+      list = list.filter((v) => filters.corner.includes(String(v.corner)));
+    if (filters.status.length) list = list.filter((v) => filters.status.includes(v.status));
 
     const dir = sort.dir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
@@ -136,9 +234,6 @@ export default function VacantsTable() {
       if (sort.key === "bhk") {
         av = configForExtent(a.extentSft);
         bv = configForExtent(b.extentSft);
-      } else if (sort.key === "status") {
-        av = displayStatusOf(a);
-        bv = displayStatusOf(b);
       } else {
         av = a[sort.key];
         bv = b[sort.key];
@@ -146,21 +241,23 @@ export default function VacantsTable() {
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
       return String(av).localeCompare(String(bv), undefined, { numeric: true }) * dir;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vacants, query, filters, sort, statusMap]);
+  }, [vacants, query, filters, sort]);
 
   const isFiltered = query.trim() !== "" || activeFilterCount > 0;
 
   const stats = useMemo(() => {
     let available = 0;
+    let reserved = 0;
+    let mortgaged = 0;
     let sold = 0;
     for (const v of rows) {
-      if (displayStatusOf(v) === "Sold") sold++;
+      if (v.status === "Sold") sold++;
+      else if (v.status === "Reserved") reserved++;
+      else if (v.status === "Mortgaged") mortgaged++;
       else available++;
     }
-    return { total: rows.length, available, sold };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, statusMap]);
+    return { total: rows.length, available, reserved, mortgaged, sold };
+  }, [rows]);
 
   function toggleSort(key: SortKey) {
     setSort((s) =>
@@ -193,12 +290,12 @@ export default function VacantsTable() {
   }
 
   async function handleDelete(v: VacantPlot) {
-    const status = statusOf(v);
-    const warn =
-      status !== "Available"
-        ? ` This flat currently has a quote with status "${statusMeta[status].label}".`
-        : "";
-    if (!confirm(`Delete vacant plot ${v.block}-${v.flatNo}?${warn}`)) return;
+    const quoteStatus = statusMap.get(v.id);
+    const warnings: string[] = [];
+    if (v.status !== "Available") warnings.push(`marked "${v.status}"`);
+    if (quoteStatus) warnings.push(`has a quote with status "${quoteStatusLabel[quoteStatus]}"`);
+    const warn = warnings.length ? ` This flat is ${warnings.join(" and ")}.` : "";
+    if (!confirm(`Delete flat ${v.block}-${v.flatNo}?${warn}`)) return;
     setBusyId(v.id);
     await deleteVacant(v.id);
     refresh();
@@ -206,16 +303,25 @@ export default function VacantsTable() {
   }
 
   function handleExport() {
-    const csv = toCsv(rows, [
+    const table = toCsv(rows, [
       { key: "block", label: "Block", value: (v) => v.block },
       { key: "flatNo", label: "Flat No", value: (v) => v.flatNo },
       { key: "extentSft", label: "Extent (Sft)", value: (v) => v.extentSft },
       { key: "facing", label: "Facing", value: (v) => v.facing },
       { key: "bhk", label: "Configuration", value: (v) => configForExtent(v.extentSft) },
-      { key: "status", label: "Status", value: (v) => displayStatusOf(v) },
+      { key: "status", label: "Status", value: (v) => v.status },
       { key: "corner", label: "Corner", value: (v) => (v.corner ? "Yes" : "No") },
     ]);
-    downloadCsv(`SNR_Vacant_Plots_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    const asOn = new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const listTitle = rows.some((v) => v.status === "Sold") ? "Flat List" : "Vacant List";
+    const header = ["SNR AVENUES PVT LTD", "SNR THE ELITE", `${listTitle} as on ${asOn}`, ""].join(
+      "\r\n",
+    );
+    downloadCsv(`SNR_Flats_${new Date().toISOString().slice(0, 10)}.csv`, `${header}\r\n${table}`);
   }
 
   return (
@@ -223,7 +329,7 @@ export default function VacantsTable() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-navy sm:text-3xl">
-            Plots
+            Flats
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Flat inventory available to select when creating a quote
@@ -260,52 +366,42 @@ export default function VacantsTable() {
 
       {showFilters && (
         <Card className="mb-6 grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
-          <Select
-            value={filters.block}
-            onChange={(e) => setFilters((f) => ({ ...f, block: e.target.value }))}
-          >
-            <option value="">All Blocks</option>
-            {blocks.map((b) => (
-              <option key={b} value={b}>
-                Block {b}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={filters.facing}
-            onChange={(e) => setFilters((f) => ({ ...f, facing: e.target.value }))}
-          >
-            <option value="">All Facings</option>
-            {FACING_OPTIONS.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={filters.bhk}
-            onChange={(e) => setFilters((f) => ({ ...f, bhk: e.target.value }))}
-          >
-            <option value="">All Configurations</option>
-            <option value="2 BHK">2 BHK</option>
-            <option value="3 BHK">3 BHK</option>
-          </Select>
-          <Select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-          >
-            <option value="">All Statuses</option>
-            <option value="Available">Available</option>
-            <option value="Sold">Sold</option>
-          </Select>
-          <Select
-            value={filters.corner}
-            onChange={(e) => setFilters((f) => ({ ...f, corner: e.target.value }))}
-          >
-            <option value="">Corner: Any</option>
-            <option value="true">Corner Only</option>
-            <option value="false">Non-Corner Only</option>
-          </Select>
+          <MultiSelectFilter
+            label="Block"
+            options={blocks.map((b) => ({ value: b, label: `Block ${b}` }))}
+            selected={filters.block}
+            onChange={(next) => setFilters((f) => ({ ...f, block: next }))}
+          />
+          <MultiSelectFilter
+            label="Facing"
+            options={FACING_OPTIONS.map((f) => ({ value: f, label: f }))}
+            selected={filters.facing}
+            onChange={(next) => setFilters((f) => ({ ...f, facing: next }))}
+          />
+          <MultiSelectFilter
+            label="Configuration"
+            options={[
+              { value: "2 BHK", label: "2 BHK" },
+              { value: "3 BHK", label: "3 BHK" },
+            ]}
+            selected={filters.bhk}
+            onChange={(next) => setFilters((f) => ({ ...f, bhk: next }))}
+          />
+          <MultiSelectFilter
+            label="Status"
+            options={VACANT_STATUS_OPTIONS.map((s) => ({ value: s, label: s }))}
+            selected={filters.status}
+            onChange={(next) => setFilters((f) => ({ ...f, status: next }))}
+          />
+          <MultiSelectFilter
+            label="Corner"
+            options={[
+              { value: "true", label: "Corner Only" },
+              { value: "false", label: "Non-Corner Only" },
+            ]}
+            selected={filters.corner}
+            onChange={(next) => setFilters((f) => ({ ...f, corner: next }))}
+          />
           {activeFilterCount > 0 && (
             <button
               type="button"
@@ -319,10 +415,10 @@ export default function VacantsTable() {
       )}
 
       {/* Stat chips */}
-      <div className="mb-6 grid grid-cols-3 gap-3">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Card className="p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            {isFiltered ? "Filtered Plots" : "Total Plots"}
+            {isFiltered ? "Filtered Flats" : "Total Flats"}
           </p>
           <p className="mt-1 text-2xl font-bold text-navy">{stats.total}</p>
         </Card>
@@ -334,6 +430,18 @@ export default function VacantsTable() {
         </Card>
         <Card className="p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Reserved{isFiltered ? " (Filtered)" : ""}
+          </p>
+          <p className="mt-1 text-2xl font-bold text-amber-600">{stats.reserved}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Mortgaged{isFiltered ? " (Filtered)" : ""}
+          </p>
+          <p className="mt-1 text-2xl font-bold text-violet-600">{stats.mortgaged}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             Sold{isFiltered ? " (Filtered)" : ""}
           </p>
           <p className="mt-1 text-2xl font-bold text-red-600">{stats.sold}</p>
@@ -342,7 +450,7 @@ export default function VacantsTable() {
 
       {!vacants && (
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-24 text-slate-400">
-          <Loader2 size={18} className="animate-spin" /> Loading vacant plots…
+          <Loader2 size={18} className="animate-spin" /> Loading flats…
         </div>
       )}
 
@@ -351,7 +459,7 @@ export default function VacantsTable() {
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-navy/5 text-navy">
             <Building2 size={26} />
           </span>
-          <h3 className="mt-4 text-lg font-semibold text-navy">No vacant plots yet</h3>
+          <h3 className="mt-4 text-lg font-semibold text-navy">No flats yet</h3>
           <p className="mt-1 max-w-xs text-sm text-slate-500">
             Add your first vacant flat so it appears when creating quotes.
           </p>
@@ -387,7 +495,6 @@ export default function VacantsTable() {
               </thead>
               <tbody>
                 {rows.map((v) => {
-                  const status = displayStatusOf(v);
                   return (
                     <tr
                       key={v.id}
@@ -412,15 +519,37 @@ export default function VacantsTable() {
                         {configForExtent(v.extentSft)}
                       </td>
                       <td className="px-5 py-3.5">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
-                            displayStatusMeta[status].className,
+                        <div className="relative inline-flex items-center">
+                          <select
+                            value={v.status}
+                            disabled={statusBusyId === v.id}
+                            onChange={(e) =>
+                              handleStatusChange(v, e.target.value as VacantStatus)
+                            }
+                            className={cn(
+                              "appearance-none rounded-full py-0.5 pl-6 pr-7 text-[11px] font-semibold outline-none disabled:opacity-60",
+                              statusMeta[v.status].className,
+                            )}
+                          >
+                            {VACANT_STATUS_OPTIONS.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                          <span
+                            className={cn(
+                              "pointer-events-none absolute left-2.5 h-1.5 w-1.5 rounded-full",
+                              statusMeta[v.status].dot,
+                            )}
+                          />
+                          {statusBusyId === v.id && (
+                            <Loader2
+                              size={12}
+                              className="pointer-events-none absolute right-2 animate-spin"
+                            />
                           )}
-                        >
-                          <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current opacity-70" />
-                          {displayStatusMeta[status].label}
-                        </span>
+                        </div>
                       </td>
                       <td className="px-5 py-3.5">
                         {v.corner ? (
@@ -436,7 +565,7 @@ export default function VacantsTable() {
                           <button
                             onClick={() => openEditModal(v)}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-navy"
-                            title="Edit vacant plot"
+                            title="Edit flat"
                           >
                             <Pencil size={16} />
                           </button>
@@ -444,7 +573,7 @@ export default function VacantsTable() {
                             onClick={() => handleDelete(v)}
                             disabled={busyId === v.id}
                             className="rounded-lg p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                            title="Delete vacant plot"
+                            title="Delete flat"
                           >
                             {busyId === v.id ? (
                               <Loader2 size={16} className="animate-spin" />
@@ -462,7 +591,7 @@ export default function VacantsTable() {
           </div>
           {rows.length === 0 && (
             <div className="py-14 text-center text-sm text-slate-400">
-              No vacant plots match your search/filters.
+              No flats match your search/filters.
             </div>
           )}
         </div>

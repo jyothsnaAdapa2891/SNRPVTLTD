@@ -4,6 +4,15 @@
  * data lives in the browser.
  */
 
+export type VacantStatus = "Available" | "Sold" | "Reserved" | "Mortgaged";
+
+export const VACANT_STATUS_OPTIONS: VacantStatus[] = [
+  "Available",
+  "Reserved",
+  "Mortgaged",
+  "Sold",
+];
+
 export interface VacantPlot {
   id: string;
   block: string;
@@ -11,6 +20,7 @@ export interface VacantPlot {
   extentSft: number;
   facing: string;
   corner: boolean;
+  status: VacantStatus;
   createdAt: string;
 }
 
@@ -24,6 +34,7 @@ export interface VacantDbDoc {
   extentSft: number;
   facing: string;
   corner: boolean;
+  status?: VacantStatus;
   createdAt: string;
 }
 
@@ -47,6 +58,7 @@ export function normalizeVacantDoc(doc: VacantDbDoc): VacantPlot {
     extentSft: doc.extentSft,
     facing: doc.facing,
     corner: !!doc.corner,
+    status: doc.status ?? "Available",
     createdAt: doc.createdAt,
   };
 }
@@ -89,6 +101,19 @@ export async function updateVacant(id: string, input: VacantInput): Promise<Vaca
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
+  });
+  const doc = await asJson<VacantDbDoc>(res);
+  return normalizeVacantDoc(doc);
+}
+
+export async function updateVacantStatus(
+  id: string,
+  status: VacantStatus,
+): Promise<VacantPlot> {
+  const res = await fetch(`/api/vacants/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
   });
   const doc = await asJson<VacantDbDoc>(res);
   return normalizeVacantDoc(doc);

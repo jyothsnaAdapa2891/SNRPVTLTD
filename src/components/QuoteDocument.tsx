@@ -12,103 +12,110 @@ const NAVY = "#10233f";
 const GOLD = "#c6952f";
 const MUTED = "#64748b";
 
-const s = StyleSheet.create({
-  page: {
-    paddingHorizontal: 46,
-    paddingVertical: 44,
-    fontSize: 10.5,
-    color: "#1f2937",
-    lineHeight: 1.45,
-  },
-  header: {
-    borderBottomWidth: 2,
-    borderBottomColor: GOLD,
-    paddingBottom: 12,
-    marginBottom: 18,
-    textAlign: "center",
-  },
-  eyebrow: {
-    fontSize: 8,
-    letterSpacing: 3,
-    color: GOLD,
-    textTransform: "uppercase",
-    fontFamily: "Helvetica-Bold",
-  },
-  title: {
-    fontSize: 16,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    marginTop: 3,
-  },
-  subtitle: { fontSize: 9, color: MUTED, marginTop: 4 },
-  metaRow: { fontSize: 9, color: MUTED, marginTop: 5 },
-  para: { marginBottom: 6 },
-  detailBox: {
-    backgroundColor: "#f4f6fa",
-    borderRadius: 6,
-    padding: 12,
-    marginTop: 6,
-    marginBottom: 14,
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  detail: { width: "33%", marginBottom: 6 },
-  detailK: {
-    fontSize: 7.5,
-    color: MUTED,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  detailV: { fontSize: 11, fontFamily: "Helvetica-Bold", color: NAVY },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 2.5,
-  },
-  rowLabel: { flex: 1, paddingRight: 12 },
-  rowVal: { fontFamily: "Helvetica-Bold" },
-  strongRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: NAVY,
-    paddingVertical: 5,
-    marginVertical: 5,
-  },
-  strongText: { fontFamily: "Helvetica-Bold", color: NAVY, fontSize: 11.5 },
-  sectionTitle: {
-    fontSize: 9,
-    fontFamily: "Helvetica-Bold",
-    color: NAVY,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginTop: 12,
-    marginBottom: 3,
-  },
-  terms: {
-    borderWidth: 1,
-    borderColor: "#f3e6c8",
-    backgroundColor: "#fdf8ee",
-    borderRadius: 6,
-    padding: 12,
-    marginTop: 12,
-  },
-  muted: { color: MUTED },
-  sign: { marginTop: 26 },
-  signName: { fontFamily: "Helvetica-Bold", color: NAVY, fontSize: 11 },
-  signTitle: {
-    fontSize: 8.5,
-    color: GOLD,
-    fontFamily: "Helvetica-Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-});
+// The discount row adds one extra line to an already-full single page
+// layout. When a discount is present, every size/spacing below is nudged
+// down slightly (via `compact`) so the document still fits on one page
+// instead of spilling a near-empty second page.
+function createStyles(compact: boolean) {
+  return StyleSheet.create({
+    page: {
+      paddingHorizontal: 46,
+      paddingVertical: compact ? 34 : 44,
+      fontSize: compact ? 9.8 : 10.5,
+      color: "#1f2937",
+      lineHeight: compact ? 1.3 : 1.45,
+    },
+    header: {
+      borderBottomWidth: 2,
+      borderBottomColor: GOLD,
+      paddingBottom: compact ? 9 : 12,
+      marginBottom: compact ? 12 : 18,
+      textAlign: "center",
+    },
+    eyebrow: {
+      fontSize: 8,
+      letterSpacing: 3,
+      color: GOLD,
+      textTransform: "uppercase",
+      fontFamily: "Helvetica-Bold",
+    },
+    title: {
+      fontSize: compact ? 14.5 : 16,
+      fontFamily: "Helvetica-Bold",
+      color: NAVY,
+      marginTop: 3,
+    },
+    subtitle: { fontSize: 9, color: MUTED, marginTop: 4 },
+    metaRow: { fontSize: 9, color: MUTED, marginTop: 5 },
+    para: { marginBottom: compact ? 4 : 6 },
+    detailBox: {
+      backgroundColor: "#f4f6fa",
+      borderRadius: 6,
+      padding: compact ? 9 : 12,
+      marginTop: 6,
+      marginBottom: compact ? 10 : 14,
+      flexDirection: "row",
+      flexWrap: "wrap",
+    },
+    detail: { width: "33%", marginBottom: compact ? 4 : 6 },
+    detailK: {
+      fontSize: 7.5,
+      color: MUTED,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+    },
+    detailV: { fontSize: compact ? 10.2 : 11, fontFamily: "Helvetica-Bold", color: NAVY },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: compact ? 1.5 : 2.5,
+    },
+    rowLabel: { flex: 1, paddingRight: 12 },
+    rowVal: { fontFamily: "Helvetica-Bold" },
+    strongRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: NAVY,
+      paddingVertical: compact ? 3.5 : 5,
+      marginVertical: compact ? 3.5 : 5,
+    },
+    strongText: { fontFamily: "Helvetica-Bold", color: NAVY, fontSize: compact ? 10.8 : 11.5 },
+    sectionTitle: {
+      fontSize: 9,
+      fontFamily: "Helvetica-Bold",
+      color: NAVY,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+      marginTop: compact ? 8 : 12,
+      marginBottom: 3,
+    },
+    terms: {
+      borderWidth: 1,
+      borderColor: "#f3e6c8",
+      backgroundColor: "#fdf8ee",
+      borderRadius: 6,
+      padding: compact ? 9 : 12,
+      marginTop: compact ? 8 : 12,
+    },
+    muted: { color: MUTED },
+    sign: { marginTop: compact ? 16 : 26 },
+    signName: { fontFamily: "Helvetica-Bold", color: NAVY, fontSize: 11 },
+    signTitle: {
+      fontSize: 8.5,
+      color: GOLD,
+      fontFamily: "Helvetica-Bold",
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+    },
+  });
+}
 
 export default function QuoteDocument({ quote }: { quote: Quote }) {
   const c = computeQuote(quote);
   const guestName = `${quote.firstName} ${quote.lastName}`.trim();
+  const s = createStyles(quote.discountPerSft > 0);
   return (
     <Document
       title={`SNR Avenues Pvt Ltd - ${quote.quoteNumber}`}
@@ -133,37 +140,42 @@ export default function QuoteDocument({ quote }: { quote: Quote }) {
         </Text>
 
         <View style={s.detailBox}>
-          <Detail k="Flat No" v={quote.flatNo} />
-          <Detail k="Extent" v={`${quote.extentSft} Sft, ${quote.bhk}`} />
-          <Detail k="Block" v={quote.block} />
-          <Detail k="Facing" v={quote.facing} />
-          <Detail k="Option" v={quote.paymentOption} />
+          <Detail s={s} k="Flat No" v={quote.flatNo} />
+          <Detail s={s} k="Extent" v={`${quote.extentSft} Sft, ${quote.bhk}`} />
+          <Detail s={s} k="Block" v={quote.block} />
+          <Detail s={s} k="Facing" v={quote.facing} />
+          <Detail s={s} k="Option" v={quote.paymentOption} />
         </View>
 
         <Row
+          s={s}
           label={`Basic Cost  (@ Rs.${quote.basicRate}/- per Sft.) x ${quote.extentSft}`}
           value={rupees(c.basicCost)}
         />
         {quote.facingChargeRate > 0 && (
           <Row
+            s={s}
             label={`${quote.facing} Face Charges  (@ Rs.${quote.facingChargeRate}/- per Sft)`}
             value={rupees(c.facingCharges)}
           />
         )}
         {c.floorRise > 0 && (
           <Row
+            s={s}
             label={`Floor Rise  (Floor ${c.floor} @ Rs.${c.floorRiseRate}/- per Sft)`}
             value={rupees(c.floorRise)}
           />
         )}
         {c.cornerCharges > 0 && (
           <Row
+            s={s}
             label={`Corner Charges  (@ Rs.${c.cornerChargeRate}/- per Sft)`}
             value={rupees(c.cornerCharges)}
           />
         )}
         {quote.discountPerSft > 0 && (
           <Row
+            s={s}
             label={`Discount  (@ Rs.${quote.discountPerSft}/- per Sft)`}
             value={`- ${rupees(c.discountAmount)}`}
             positive
@@ -180,7 +192,7 @@ export default function QuoteDocument({ quote }: { quote: Quote }) {
               Payable at the time of Registration
             </Text>
             {c.registrationCharges.map((r) => (
-              <Row key={r.label} label={r.label} value={rupees(r.amount)} />
+              <Row key={r.label} s={s} label={r.label} value={rupees(r.amount)} />
             ))}
           </>
         )}
@@ -222,7 +234,9 @@ export default function QuoteDocument({ quote }: { quote: Quote }) {
   );
 }
 
-function Detail({ k, v }: { k: string; v: string }) {
+type QuoteStyles = ReturnType<typeof createStyles>;
+
+function Detail({ s, k, v }: { s: QuoteStyles; k: string; v: string }) {
   return (
     <View style={s.detail}>
       <Text style={s.detailK}>{k}</Text>
@@ -232,10 +246,12 @@ function Detail({ k, v }: { k: string; v: string }) {
 }
 
 function Row({
+  s,
   label,
   value,
   positive,
 }: {
+  s: QuoteStyles;
   label: string;
   value: string;
   positive?: boolean;

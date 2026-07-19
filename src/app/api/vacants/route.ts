@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { VacantPlotModel } from "@/lib/models/VacantPlot";
+import { VACANT_STATUS_OPTIONS, type VacantStatus } from "@/lib/vacants";
 import seedDocs from "../../../../db/seed/vacant-plots.json";
+
+function normalizeStatus(value: unknown): VacantStatus {
+  return VACANT_STATUS_OPTIONS.includes(value as VacantStatus)
+    ? (value as VacantStatus)
+    : "Available";
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +58,7 @@ export async function POST(req: NextRequest) {
       extentSft: Number(body.extentSft) || 0,
       facing: body.facing,
       corner: !!body.corner,
+      status: normalizeStatus(body.status),
       createdAt: new Date(),
     });
     return NextResponse.json(created, { status: 201 });

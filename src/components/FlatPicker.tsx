@@ -9,18 +9,18 @@ import {
   configForExtent,
   flatIdOf,
   type VacantPlot,
+  type VacantStatus,
 } from "@/lib/vacants";
 import { facingChargeRateForFacing, cornerChargeRateForFlat } from "@/lib/calc";
-import { getFlatStatusMap } from "@/lib/store";
-import type { QuoteStatus } from "@/lib/types";
 
-const badgeStyles: Record<QuoteStatus, string> = {
-  Draft: "bg-slate-100 text-slate-600",
-  Accepted: "bg-emerald-50 text-emerald-700",
-  Rejected: "bg-red-50 text-red-700",
+const badgeStyles: Record<Exclude<VacantStatus, "Available">, string> = {
+  Reserved: "bg-amber-50 text-amber-700",
+  Mortgaged: "bg-violet-50 text-violet-700",
+  Sold: "bg-red-50 text-red-700",
 };
 
-function MiniBadge({ status }: { status: QuoteStatus }) {
+function MiniBadge({ status }: { status: VacantStatus }) {
+  if (status === "Available") return null;
   return (
     <span
       className={cn(
@@ -57,24 +57,20 @@ export default function FlatPicker({
   extentSft,
   facing,
   bhk,
-  excludeQuoteId,
   onChange,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const [statusMap, setStatusMap] = useState<Map<string, QuoteStatus>>(new Map());
   const [blocks, setBlocks] = useState<string[]>([]);
   const [flatsForBlock, setFlatsForBlock] = useState<VacantPlot[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  function refreshStatusAndBlocks() {
-    getFlatStatusMap(excludeQuoteId).then(setStatusMap);
+  function refreshBlocks() {
     getBlocks().then(setBlocks);
   }
 
   useEffect(() => {
-    refreshStatusAndBlocks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [excludeQuoteId]);
+    refreshBlocks();
+  }, []);
 
   useEffect(() => {
     if (block) flatsInBlock(block).then(setFlatsForBlock);
@@ -91,10 +87,8 @@ export default function FlatPicker({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const selectableFlats = flatsForBlock.filter((f) => {
-    const status = statusMap.get(f.id);
-    return status !== "Accepted";
-  });
+  // Every status except Sold can still be picked for a new quote.
+  const selectableFlats = flatsForBlock.filter((f) => f.status !== "Sold");
 
   function selectBlock(newBlock: string) {
     // Changing block clears the flat/extent/facing/bhk since they belong to the old block.
@@ -122,8 +116,10 @@ export default function FlatPicker({
     setOpen(false);
   }
 
-  const currentStatus =
-    block && flatNo ? statusMap.get(flatIdOf(block, flatNo)) : undefined;
+  const currentFlatId = block && flatNo ? flatIdOf(block, flatNo) : undefined;
+  const currentStatus = currentFlatId
+    ? flatsForBlock.find((f) => f.id === currentFlatId)?.status
+    : undefined;
 
   return (
     <>
@@ -144,7 +140,7 @@ export default function FlatPicker({
             type="button"
             disabled={!block}
             onClick={() => {
-              refreshStatusAndBlocks();
+              refreshBlocks();
               setOpen((o) => !o);
             }}
             className={cn(
@@ -168,28 +164,25 @@ export default function FlatPicker({
                   No vacant flats left in this block.
                 </p>
               )}
-              {selectableFlats.map((f) => {
-                const status = statusMap.get(f.id);
-                return (
-                  <button
-                    key={f.flatNo}
-                    type="button"
-                    onClick={() => selectFlat(f)}
-                    className={cn(
-                      "flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50",
-                      f.flatNo === flatNo && "bg-navy/5",
-                    )}
-                  >
-                    <span className="flex items-center font-medium text-slate-700">
-                      {f.flatNo}
-                      {status && <MiniBadge status={status} />}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {f.extentSft} sft · {f.facing}
-                    </span>
-                  </button>
-                );
-              })}
+              {selectableFlats.map((f) => (
+                <button
+                  key={f.flatNo}
+                  type="button"
+                  onClick={() => selectFlat(f)}
+                  className={cn(
+                    "flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50",
+                    f.flatNo === flatNo && "bg-navy/5",
+                  )}
+                >
+                  <span className="flex items-center font-medium text-slate-700">
+                    {f.flatNo}
+                    <MiniBadge status={f.status} />
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {f.extentSft} sft · {f.facing}
+                  </span>
+                </button>
+              ))}
             </div>
           )}
         </div>

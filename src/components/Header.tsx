@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileText, LogOut, UserRound, Building2 } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { logout } from "@/app/actions/auth";
+import ProjectDetailsButton from "./ProjectDetailsButton";
 
 export default async function Header() {
   const session = await getSession();
@@ -34,8 +35,9 @@ export default async function Header() {
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-3.5 py-2 text-sm font-semibold text-navy shadow-sm transition-all hover:bg-slate-50 active:scale-[0.98]"
             >
               <Building2 size={16} strokeWidth={2.2} />
-              <span className="hidden sm:inline">Plots</span>
+              <span className="hidden sm:inline">Flats</span>
             </Link>
+            <ProjectDetailsButton />
             <form action={logout}>
               <button
                 type="submit"

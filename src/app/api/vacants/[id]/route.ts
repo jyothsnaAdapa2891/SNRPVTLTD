@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { VacantPlotModel } from "@/lib/models/VacantPlot";
+import { VACANT_STATUS_OPTIONS, type VacantStatus } from "@/lib/vacants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+function normalizeStatus(value: unknown, fallback: VacantStatus): VacantStatus {
+  return VACANT_STATUS_OPTIONS.includes(value as VacantStatus)
+    ? (value as VacantStatus)
+    : fallback;
+}
 
 // PUT /api/vacants/:id
 export async function PUT(req: NextRequest, { params }: Ctx) {
@@ -32,6 +39,8 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    const existingStatus = (existing as { status?: VacantStatus }).status ?? "Available";
+
     await VacantPlotModel.deleteOne({ _id: id });
     const updated = await VacantPlotModel.create({
       _id: newId,
@@ -40,12 +49,38 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
       extentSft: Number(body.extentSft) || 0,
       facing: body.facing,
       corner: !!body.corner,
+      status: normalizeStatus(body.status, existingStatus),
       createdAt: (existing as { createdAt?: Date }).createdAt ?? new Date(),
     });
     return NextResponse.json(updated);
   } catch (err) {
     console.error("PUT /api/vacants/:id", err);
     return NextResponse.json({ error: "Failed to update vacant plot" }, { status: 500 });
+  }
+}
+
+// PATCH /api/vacants/:id -> partial update (used for quick status changes)
+export async function PATCH(req: NextRequest, { params }: Ctx) {
+  try {
+    await connectDB();
+    const { id } = await params;
+    const body = await req.json();
+
+    const existing = await VacantPlotModel.findById(id).lean<{ status?: VacantStatus }>();
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const status = normalizeStatus(body.status, existing.status ?? "Available");
+    const updated = await VacantPlotModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true },
+    ).lean();
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error("PATCH /api/vacants/:id", err);
+    return NextResponse.json({ error: "Failed to update flat status" }, { status: 500 });
   }
 }
 
