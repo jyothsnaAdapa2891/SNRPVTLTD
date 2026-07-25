@@ -74,6 +74,18 @@ async function asJson<T>(res: Response): Promise<T> {
   return data as T;
 }
 
+/**
+ * Orders flat numbers with ground-floor "G" units (G1, G2, …) first, since
+ * they're physically the ground floor, then regular floor numbers
+ * numerically (101, 103, 201, …).
+ */
+export function compareFlatNo(a: string, b: string): number {
+  const aIsGround = /^G\d+$/i.test(a);
+  const bIsGround = /^G\d+$/i.test(b);
+  if (aIsGround !== bIsGround) return aIsGround ? -1 : 1;
+  return a.localeCompare(b, undefined, { numeric: true });
+}
+
 export async function getAllVacants(): Promise<VacantPlot[]> {
   const res = await fetch("/api/vacants");
   const docs = await asJson<VacantDbDoc[]>(res);
@@ -81,7 +93,7 @@ export async function getAllVacants(): Promise<VacantPlot[]> {
     .map(normalizeVacantDoc)
     .sort((a, b) =>
       a.block === b.block
-        ? a.flatNo.localeCompare(b.flatNo, undefined, { numeric: true })
+        ? compareFlatNo(a.flatNo, b.flatNo)
         : a.block.localeCompare(b.block),
     );
 }

@@ -24,6 +24,7 @@ import {
   deleteVacant,
   updateVacantStatus,
   configForExtent,
+  compareFlatNo,
   FACING_OPTIONS,
   VACANT_STATUS_OPTIONS,
   type VacantPlot,
@@ -229,6 +230,8 @@ export default function VacantsTable() {
 
     const dir = sort.dir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
+      if (sort.key === "flatNo") return compareFlatNo(a.flatNo, b.flatNo) * dir;
+
       let av: string | number;
       let bv: string | number;
       if (sort.key === "bhk") {
@@ -565,7 +568,7 @@ export default function VacantsTable() {
                         )}
                       </td>
                       <td className="px-5 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openEditModal(v)}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-navy"
