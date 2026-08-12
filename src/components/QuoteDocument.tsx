@@ -12,10 +12,10 @@ const NAVY = "#10233f";
 const GOLD = "#c6952f";
 const MUTED = "#64748b";
 
-// The discount row adds one extra line to an already-full single page
-// layout. When a discount is present, every size/spacing below is nudged
-// down slightly (via `compact`) so the document still fits on one page
-// instead of spilling a near-empty second page.
+// With the discount row, subtotal, and grand-total lines, the full quote
+// is dense enough that every size/spacing below is nudged down slightly
+// (via `compact`) so it reliably fits on one page instead of spilling a
+// near-empty second page.
 function createStyles(compact: boolean) {
   return StyleSheet.create({
     page: {
@@ -82,6 +82,41 @@ function createStyles(compact: boolean) {
       marginVertical: compact ? 3.5 : 5,
     },
     strongText: { fontFamily: "Helvetica-Bold", color: NAVY, fontSize: compact ? 10.8 : 11.5 },
+    subtotalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      borderTopWidth: 1,
+      borderTopColor: "#d7dce5",
+      paddingTop: compact ? 4 : 6,
+      marginTop: compact ? 2 : 4,
+    },
+    subtotalText: {
+      fontFamily: "Helvetica-Bold",
+      color: NAVY,
+      fontSize: compact ? 9.8 : 10.5,
+    },
+    grandTotalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: NAVY,
+      borderRadius: 6,
+      paddingVertical: compact ? 7 : 9,
+      paddingHorizontal: 12,
+      marginTop: compact ? 8 : 10,
+    },
+    grandTotalLabel: {
+      fontFamily: "Helvetica-Bold",
+      color: GOLD,
+      fontSize: compact ? 8.5 : 9,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+    },
+    grandTotalText: {
+      fontFamily: "Helvetica-Bold",
+      color: "#ffffff",
+      fontSize: compact ? 12.5 : 13.5,
+    },
     sectionTitle: {
       fontSize: 9,
       fontFamily: "Helvetica-Bold",
@@ -115,7 +150,7 @@ function createStyles(compact: boolean) {
 export default function QuoteDocument({ quote }: { quote: Quote }) {
   const c = computeQuote(quote);
   const guestName = `${quote.firstName} ${quote.lastName}`.trim();
-  const s = createStyles(quote.discountPerSft > 0);
+  const s = createStyles(true);
   return (
     <Document
       title={`SNR Avenues Pvt Ltd - ${quote.quoteNumber}`}
@@ -194,8 +229,17 @@ export default function QuoteDocument({ quote }: { quote: Quote }) {
             {c.registrationCharges.map((r) => (
               <Row key={r.label} s={s} label={r.label} value={rupees(r.amount)} />
             ))}
+            <View style={s.subtotalRow}>
+              <Text style={[s.rowLabel, s.subtotalText]}>Subtotal</Text>
+              <Text style={s.subtotalText}>{rupees(c.registrationTotal)}</Text>
+            </View>
           </>
         )}
+
+        <View style={s.grandTotalRow}>
+          <Text style={s.grandTotalLabel}>Grand Total</Text>
+          <Text style={s.grandTotalText}>{rupees(c.grandTotal)}</Text>
+        </View>
 
         <View style={s.terms}>
           <Text style={s.para}>

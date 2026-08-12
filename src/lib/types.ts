@@ -34,7 +34,7 @@ export interface Quote {
   corpusFund: number; // fixed 100000
   maintRatePerSftMonth: number; // fixed 3
   maintMonths: number; // fixed 24
-  waterCharges: number; // fixed 75000
+  waterCharges: number; // fixed 100000
   legalCharges: number; // fixed 20000
   cautionDeposit: number; // fixed 25000
 
@@ -84,7 +84,7 @@ export const emptyQuote: QuoteInput = {
   corpusFund: 100000,
   maintRatePerSftMonth: 3,
   maintMonths: 24,
-  waterCharges: 75000,
+  waterCharges: 100000,
   legalCharges: 20000,
   cautionDeposit: 25000,
 

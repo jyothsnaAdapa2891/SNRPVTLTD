@@ -96,7 +96,7 @@ export function computeQuote(q: Quote | QuoteInput): ComputedQuote {
       label: `${q.maintMonths ? Math.round(Number(q.maintMonths) / 12) : 0} Yrs. Adv. Maint. Charges (@Rs.${q.maintRatePerSftMonth}/- per Sft. per Month)`,
       amount: maintCharges,
     },
-    { label: "Water Connection Charges", amount: Number(q.waterCharges) || 0 },
+    { label: "Municipal Water Connection Charges", amount: Number(q.waterCharges) || 0 },
     { label: "Legal & Documentation Charges", amount: Number(q.legalCharges) || 0 },
     { label: "Refundable Caution Deposit", amount: Number(q.cautionDeposit) || 0 },
   ].filter((r) => r.amount > 0);

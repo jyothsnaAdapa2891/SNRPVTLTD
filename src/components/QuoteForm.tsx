@@ -95,12 +95,11 @@ export default function QuoteForm({ initial, id }: Props) {
                 required
               />
             </Field>
-            <Field label="Phone Number">
+            <Field label="Phone Number (optional)">
               <TextInput
                 type="tel"
                 value={form.phone}
                 onChange={str("phone")}
-                required
               />
             </Field>
             <Field label="Address (optional)">
@@ -239,7 +238,7 @@ export default function QuoteForm({ initial, id }: Props) {
               value={rupees(c.maintCharges)}
               hint={`${Math.round(form.maintMonths / 12)} yrs @ Rs.${form.maintRatePerSftMonth}/sft/month`}
             />
-            <LockedField label="Water Connection" value={rupees(form.waterCharges)} />
+            <LockedField label="Municipal Water Connection" value={rupees(form.waterCharges)} />
             <LockedField label="Legal & Documentation" value={rupees(form.legalCharges)} />
             <LockedField label="Refundable Caution Deposit" value={rupees(form.cautionDeposit)} />
           </Section>

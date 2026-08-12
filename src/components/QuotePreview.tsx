@@ -156,8 +156,23 @@ export default function QuotePreview({ quote }: { quote: Quote }) {
           {c.registrationCharges.map((r) => (
             <Row key={r.label} label={r.label} value={rupees(r.amount)} />
           ))}
+          <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-slate-200 py-[3px] pt-2 font-bold text-navy">
+            <span className="text-[13.5px] leading-snug">Subtotal</span>
+            <span className="shrink-0 text-[13.5px] tabular-nums">
+              {rupees(c.registrationTotal)}
+            </span>
+          </div>
         </div>
       )}
+
+      <div className="mt-3 flex items-center justify-between gap-4 rounded-lg bg-navy px-4 py-3">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-gold">
+          Grand Total
+        </span>
+        <span className="shrink-0 text-[17px] font-bold tabular-nums text-white">
+          {rupees(c.grandTotal)}
+        </span>
+      </div>
 
       {/* Payment terms */}
       <div className="mt-6 space-y-1.5 rounded-xl border border-gold-soft bg-gold-soft/30 p-5 text-[13px] leading-relaxed">
