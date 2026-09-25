@@ -65,6 +65,10 @@ body {
 }
 
 /* Print: only the estimate sheet shows */
+@page {
+  size: A4;
+  margin: 8mm;
+}
 @media print {
   body {
     background: #fff;
@@ -77,5 +81,47 @@ body {
     border: none !important;
     margin: 0 !important;
     max-width: none !important;
+    padding: 16px 28px !important;
+    zoom: 0.9;
+    break-inside: avoid;
+  }
+  /* Tighter vertical rhythm so the whole quote stays on one printed page */
+  .print-sheet .mt-10,
+  .print-sheet .mt-7,
+  .print-sheet .mt-6 {
+    margin-top: 8px !important;
+  }
+  .print-sheet .mt-8 {
+    margin-top: 10px !important;
+  }
+  .print-sheet .mb-8 {
+    margin-bottom: 10px !important;
+  }
+  .print-sheet .mt-4,
+  .print-sheet .mt-3 {
+    margin-top: 6px !important;
+  }
+  .print-sheet .pb-5 {
+    padding-bottom: 8px !important;
+  }
+  .print-sheet .p-5 {
+    padding: 8px 12px !important;
+  }
+  .print-sheet .py-\[3px\] {
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+  }
+  .print-sheet .py-3 {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+  .print-sheet .space-y-1\.5 > * + * {
+    margin-top: 3px !important;
+  }
+  .print-sheet .gap-y-1\.5 {
+    row-gap: 4px !important;
+  }
+  .print-sheet .leading-relaxed {
+    line-height: 1.35 !important;
   }
 }

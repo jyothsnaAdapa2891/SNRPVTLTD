@@ -174,6 +174,35 @@ export default function QuotePreview({ quote }: { quote: Quote }) {
         </span>
       </div>
 
+      {/* GST */}
+      {quote.showGst && c.gstLines.length > 0 && (
+        <div className="mt-6">
+          <div className="mb-1 text-[12px] font-bold uppercase tracking-wide text-navy">
+            GST
+          </div>
+          {c.gstLines.map((l) => (
+            <Row
+              key={l.label}
+              label={
+                <>
+                  {l.label}{" "}
+                  <span className="text-slate-400">
+                    ({l.percent}% of {rupees(l.base)})
+                  </span>
+                </>
+              }
+              value={rupees(l.amount)}
+            />
+          ))}
+          <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-slate-200 py-[3px] pt-2 font-bold text-navy">
+            <span className="text-[13.5px] leading-snug">Total GST</span>
+            <span className="shrink-0 text-[13.5px] tabular-nums">
+              {rupees(c.gstTotal)}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Payment terms */}
       <div className="mt-6 space-y-1.5 rounded-xl border border-gold-soft bg-gold-soft/30 p-5 text-[13px] leading-relaxed">
         <p>

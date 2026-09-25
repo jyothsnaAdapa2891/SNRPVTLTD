@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import { Field, TextInput, Select, Button, Card, Switch, LockedField } from "./ui";
+import { Field, TextInput, Select, Button, Card, Switch, LockedField, Textarea } from "./ui";
 import FlatPicker from "./FlatPicker";
 import { emptyQuote, type Quote, type QuoteInput } from "@/lib/types";
 import { computeQuote, rupees, amenitiesForBhk, AGREEMENT_PERCENT } from "@/lib/calc";
@@ -225,6 +225,23 @@ export default function QuoteForm({ initial, id }: Props) {
                 </>
               )}
             </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-slate-600">
+                  GST
+                </span>
+                <Switch
+                  checked={!!form.showGst}
+                  onChange={(next) => set("showGst", next)}
+                  label="Show on quote"
+                />
+              </div>
+              <span className="text-[11px] text-slate-400">
+                {form.showGst
+                  ? `GST ${rupees(c.gstTotal)} · Flat Cost 5%, Amenities 5%, Corpus Fund 5%, Adv. Maintenance 18% · shown on printed quote`
+                  : "Hidden on printed quote"}
+              </span>
+            </div>
           </Section>
 
           <Section title="Payable at Registration">
@@ -257,9 +274,9 @@ export default function QuoteForm({ initial, id }: Props) {
               hint={`${AGREEMENT_PERCENT}% of Flat Cost, minus Booking Amount (registration excluded)`}
             />
             <Field label="Notes (optional)" className="sm:col-span-2">
-              <TextInput
+              <Textarea
                 value={form.notes ?? ""}
-                onChange={str("notes")}
+                onChange={(e) => set("notes", e.target.value)}
                 placeholder="Any extra remarks shown on the estimate"
               />
             </Field>
@@ -297,6 +314,7 @@ export default function QuoteForm({ initial, id }: Props) {
                 <span className="tabular-nums">{rupees(c.flatCost)}</span>
               </div>
               <SumRow k="Registration Charges" v={rupees(c.registrationTotal)} />
+              {form.showGst && <SumRow k="Total GST" v={rupees(c.gstTotal)} />}
               <SumRow
                 k={`Agreement Amount (${AGREEMENT_PERCENT}%)`}
                 v={rupees(c.agreementAmount)}

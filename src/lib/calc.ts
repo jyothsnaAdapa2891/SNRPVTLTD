@@ -44,6 +44,19 @@ export function cornerChargeRateForFlat(facing: string, extentSft: number): numb
 /** The agreement amount is always 20% of the flat cost (registration charges excluded). */
 export const AGREEMENT_PERCENT = 20;
 
+/** GST rates (%) applied to each component when the quote shows GST. */
+export const GST_FLAT_PERCENT = 5;
+export const GST_AMENITIES_PERCENT = 5;
+export const GST_CORPUS_PERCENT = 5;
+export const GST_MAINT_PERCENT = 18;
+
+export interface GstLine {
+  label: string;
+  base: number;
+  percent: number;
+  amount: number;
+}
+
 export interface ComputedQuote {
   floor: number;
   floorRiseRate: number;
@@ -62,6 +75,9 @@ export interface ComputedQuote {
 
   agreementAmount: number; // 20% of flat cost, minus booking amount
   grandTotal: number; // flat cost + registration charges
+
+  gstLines: GstLine[];
+  gstTotal: number;
 }
 
 export function computeQuote(q: Quote | QuoteInput): ComputedQuote {
@@ -109,6 +125,26 @@ export function computeQuote(q: Quote | QuoteInput): ComputedQuote {
   const agreementAmount =
     (AGREEMENT_PERCENT / 100) * flatCost - (Number(q.bookingAmount) || 0);
 
+  const gstDefs: [string, number, number][] = [
+    ["Flat Cost", flatCost, GST_FLAT_PERCENT],
+    ["Amenities", Number(q.amenities) || 0, GST_AMENITIES_PERCENT],
+    ["Corpus Fund", Number(q.corpusFund) || 0, GST_CORPUS_PERCENT],
+    [
+      `${q.maintMonths ? Math.round(Number(q.maintMonths) / 12) : 0} Yrs. Adv. Maint. Charges`,
+      maintCharges,
+      GST_MAINT_PERCENT,
+    ],
+  ];
+  const gstLines = gstDefs
+    .map(([label, base, percent]) => ({
+      label,
+      base,
+      percent,
+      amount: (base * percent) / 100,
+    }))
+    .filter((l) => l.base > 0);
+  const gstTotal = gstLines.reduce((s, l) => s + l.amount, 0);
+
   return {
     floor,
     floorRiseRate,
@@ -124,6 +160,8 @@ export function computeQuote(q: Quote | QuoteInput): ComputedQuote {
     registrationTotal,
     agreementAmount,
     grandTotal: flatCost + registrationTotal,
+    gstLines,
+    gstTotal,
   };
 }
 

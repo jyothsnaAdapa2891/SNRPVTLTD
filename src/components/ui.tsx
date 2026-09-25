@@ -35,6 +35,20 @@ export const TextInput = React.forwardRef<
   return <input ref={ref} className={cn(inputBase, className)} {...props} />;
 });
 
+export const Textarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function Textarea({ className, ...props }, ref) {
+  return (
+    <textarea
+      ref={ref}
+      rows={3}
+      className={cn(inputBase, "resize-y", className)}
+      {...props}
+    />
+  );
+});
+
 export function Select({
   className,
   children,

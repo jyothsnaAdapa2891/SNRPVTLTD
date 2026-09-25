@@ -28,6 +28,7 @@ export interface Quote {
   facingChargeRate: number; // per sft — defaults to 100 for East, 0 otherwise
   cornerChargeRate: number; // per sft — defaults to 100 for West + 1890 sft, 0 otherwise
   discountPerSft: number; // per sft (0 = no discount, hidden on the printed quote)
+  showGst?: boolean; // when true, the GST table is printed on the quote
 
   // Registration-time charges (fixed, not user-editable)
   amenities: number; // derived from bhk: 900000 (3 BHK) / 700000 (2 BHK)
@@ -79,6 +80,7 @@ export const emptyQuote: QuoteInput = {
   facingChargeRate: 0,
   cornerChargeRate: 0,
   discountPerSft: 0,
+  showGst: false,
 
   amenities: 900000,
   corpusFund: 100000,

@@ -27,6 +27,7 @@ const QuoteSchema = new Schema(
     facingChargeRate: { type: Number, default: 0 },
     cornerChargeRate: { type: Number, default: 0 },
     discountPerSft: { type: Number, default: 0 },
+    showGst: { type: Boolean, default: false },
 
     amenities: { type: Number, default: 0 },
     corpusFund: { type: Number, default: 0 },

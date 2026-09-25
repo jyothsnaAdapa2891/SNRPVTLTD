@@ -19,17 +19,17 @@ const MUTED = "#64748b";
 function createStyles(compact: boolean) {
   return StyleSheet.create({
     page: {
-      paddingHorizontal: 46,
-      paddingVertical: compact ? 34 : 44,
-      fontSize: compact ? 9.8 : 10.5,
+      paddingHorizontal: 40,
+      paddingVertical: compact ? 24 : 44,
+      fontSize: compact ? 9.5 : 10.5,
       color: "#1f2937",
-      lineHeight: compact ? 1.3 : 1.45,
+      lineHeight: compact ? 1.2 : 1.45,
     },
     header: {
       borderBottomWidth: 2,
       borderBottomColor: GOLD,
-      paddingBottom: compact ? 9 : 12,
-      marginBottom: compact ? 12 : 18,
+      paddingBottom: compact ? 5 : 12,
+      marginBottom: compact ? 7 : 18,
       textAlign: "center",
     },
     eyebrow: {
@@ -47,17 +47,17 @@ function createStyles(compact: boolean) {
     },
     subtitle: { fontSize: 9, color: MUTED, marginTop: 4 },
     metaRow: { fontSize: 9, color: MUTED, marginTop: 5 },
-    para: { marginBottom: compact ? 4 : 6 },
+    para: { marginBottom: compact ? 3 : 6 },
     detailBox: {
       backgroundColor: "#f4f6fa",
       borderRadius: 6,
-      padding: compact ? 9 : 12,
-      marginTop: 6,
-      marginBottom: compact ? 10 : 14,
+      padding: compact ? 6 : 12,
+      marginTop: 4,
+      marginBottom: compact ? 6 : 14,
       flexDirection: "row",
       flexWrap: "wrap",
     },
-    detail: { width: "33%", marginBottom: compact ? 4 : 6 },
+    detail: { width: "33%", marginBottom: compact ? 2 : 6 },
     detailK: {
       fontSize: 7.5,
       color: MUTED,
@@ -68,7 +68,7 @@ function createStyles(compact: boolean) {
     row: {
       flexDirection: "row",
       justifyContent: "space-between",
-      paddingVertical: compact ? 1.5 : 2.5,
+      paddingVertical: compact ? 1 : 2.5,
     },
     rowLabel: { flex: 1, paddingRight: 12 },
     rowVal: { fontFamily: "Helvetica-Bold" },
@@ -78,8 +78,8 @@ function createStyles(compact: boolean) {
       borderTopWidth: 1,
       borderBottomWidth: 1,
       borderColor: NAVY,
-      paddingVertical: compact ? 3.5 : 5,
-      marginVertical: compact ? 3.5 : 5,
+      paddingVertical: compact ? 2.5 : 5,
+      marginVertical: compact ? 2.5 : 5,
     },
     strongText: { fontFamily: "Helvetica-Bold", color: NAVY, fontSize: compact ? 10.8 : 11.5 },
     subtotalRow: {
@@ -87,8 +87,8 @@ function createStyles(compact: boolean) {
       justifyContent: "space-between",
       borderTopWidth: 1,
       borderTopColor: "#d7dce5",
-      paddingTop: compact ? 4 : 6,
-      marginTop: compact ? 2 : 4,
+      paddingTop: compact ? 2.5 : 6,
+      marginTop: compact ? 1 : 4,
     },
     subtotalText: {
       fontFamily: "Helvetica-Bold",
@@ -101,9 +101,9 @@ function createStyles(compact: boolean) {
       alignItems: "center",
       backgroundColor: NAVY,
       borderRadius: 6,
-      paddingVertical: compact ? 7 : 9,
+      paddingVertical: compact ? 5 : 9,
       paddingHorizontal: 12,
-      marginTop: compact ? 8 : 10,
+      marginTop: compact ? 6 : 10,
     },
     grandTotalLabel: {
       fontFamily: "Helvetica-Bold",
@@ -123,19 +123,19 @@ function createStyles(compact: boolean) {
       color: NAVY,
       textTransform: "uppercase",
       letterSpacing: 0.8,
-      marginTop: compact ? 8 : 12,
-      marginBottom: 3,
+      marginTop: compact ? 5 : 12,
+      marginBottom: 2,
     },
     terms: {
       borderWidth: 1,
       borderColor: "#f3e6c8",
       backgroundColor: "#fdf8ee",
       borderRadius: 6,
-      padding: compact ? 9 : 12,
-      marginTop: compact ? 8 : 12,
+      padding: compact ? 6 : 12,
+      marginTop: compact ? 6 : 12,
     },
     muted: { color: MUTED },
-    sign: { marginTop: compact ? 16 : 26 },
+    sign: { marginTop: compact ? 8 : 26 },
     signName: { fontFamily: "Helvetica-Bold", color: NAVY, fontSize: 11 },
     signTitle: {
       fontSize: 8.5,
@@ -241,6 +241,24 @@ export default function QuoteDocument({ quote }: { quote: Quote }) {
           <Text style={s.grandTotalText}>{rupees(c.grandTotal)}</Text>
         </View>
 
+        {quote.showGst && c.gstLines.length > 0 && (
+          <>
+            <Text style={s.sectionTitle}>GST</Text>
+            {c.gstLines.map((l) => (
+              <Row
+                key={l.label}
+                s={s}
+                label={`${l.label}  (${l.percent}% of ${rupees(l.base)})`}
+                value={rupees(l.amount)}
+              />
+            ))}
+            <View style={s.subtotalRow}>
+              <Text style={[s.rowLabel, s.subtotalText]}>Total GST</Text>
+              <Text style={s.subtotalText}>{rupees(c.gstTotal)}</Text>
+            </View>
+          </>
+        )}
+
         <View style={s.terms}>
           <Text style={s.para}>
             <Text style={s.rowVal}>Booking Amount</Text>{" "}
@@ -268,7 +286,7 @@ export default function QuoteDocument({ quote }: { quote: Quote }) {
 
         <View style={s.sign}>
           <Text>WITH REGARDS,</Text>
-          <Text style={[s.signName, { marginTop: 18 }]}>
+          <Text style={[s.signName, { marginTop: 10 }]}>
             ({quote.signatoryName})
           </Text>
           <Text style={s.signTitle}>{quote.signatoryTitle}</Text>
